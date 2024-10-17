@@ -72,3 +72,61 @@ if insights_response.status_code == 200:
 else:
     print(f"Failed to fetch ping metrics data. Status Code: {insights_response.status_code}")
     print("Response:", insights_response.text)
+
+
+
+
+import requests
+import json
+
+# Set your New Relic API key and account ID
+API_KEY = 'YOUR_NEW_RELIC_API_KEY'  # Replace with your actual API key
+ACCOUNT_ID = 'YOUR_ACCOUNT_ID'      # Replace with your actual account ID
+
+# GraphQL endpoint
+url = 'https://api.newrelic.com/graphql'
+
+# GraphQL query payload
+query = """
+{
+  actor {
+    account(id: "%s") {
+      nrql(query: "FROM SyntheticCheck SELECT * SINCE 15 minutes ago") {
+        results
+      }
+    }
+  }
+}
+""" % ACCOUNT_ID
+
+# Set up the headers for the request
+headers = {
+    'Api-Key': API_KEY,
+    'Content-Type': 'application/json'
+}
+
+# Create the request payload
+payload = {
+    'query': query
+}
+
+# Make the POST request to the New Relic GraphQL API
+response = requests.post(url, headers=headers, json=payload)
+
+# Check if the request was successful
+if response.status_code == 200:
+    # Parse the JSON response
+    data = response.json()
+    # Extract the results
+    results = data.get('data', {}).get('actor', {}).get('account', {}).get('nrql', {}).get('results', [])
+
+    # Print or save the results
+    print("Monitor Data:")
+    print(json.dumps(results, indent=2))
+
+    # Optionally, save the output to a file
+    with open('output.json', 'w') as f:
+        json.dump(results, f, indent=2)
+else:
+    print(f"Failed to fetch data. Status Code: {response.status_code}")
+    print("Response:", response.text)
